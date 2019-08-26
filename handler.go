@@ -27,21 +27,21 @@ var (
 	_file  *os.File
 )
 
-func (obj *Object) Startups(HTTPUrl string, msgHand *map[string]Handler, msgHead *map[int32]MsgHandler) {
+func (obj *Object) Startups(httpUrl string, msgHand *map[string]Handler, msgHead *map[int32]MsgHandler) {
 	obj.handlers = *msgHand
 	obj.handlers["/"] = onDispatch
 	if msgHead != nil {
 		obj.msgHandlers = *msgHead
 	}
 
-	go acceptHTTPRequest(obj, HTTPUrl)
+	go acceptHTTPRequest(obj, httpUrl)
 }
 
 // acceptHTTPRequest 监听和接受HTTP
-func acceptHTTPRequest(obj *Object, HTTPUrl string) {
+func acceptHTTPRequest(obj *Object, httpUrl string) {
 	defer gomsg.Recover()
 	s := &http.Server{
-		Addr:    HTTPUrl,
+		Addr:    httpUrl,
 		Handler: &httpHandler{
 			ID: obj.ID,
 		},
@@ -50,10 +50,10 @@ func acceptHTTPRequest(obj *Object, HTTPUrl string) {
 		MaxHeaderBytes: 1 << 8,
 	}
 
-	LOGGER.Info("Http server listen at:%s,id:%d\n", HTTPUrl, obj.ID)
+	LOGGER.Info("Http server listen at:%s,id:%d\n", httpUrl, obj.ID)
 	err := s.ListenAndServe()
 	if err != nil {
-		LOGGER.Error("Http server ListenAndServe %s failed:%v\n", HTTPUrl, err)
+		LOGGER.Error("Http server ListenAndServe %s failed:%v\n", httpUrl, err)
 	}
 }
 
