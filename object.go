@@ -2,7 +2,7 @@ package http_server
 
 import (
 	"net/http"
-	BASE "yn.com/ext/common/function"
+	BASE "github.yn.com/ext/common/function"
 )
 
 type httpHandler struct {
@@ -10,7 +10,7 @@ type httpHandler struct {
 }
 
 type Handler func(*Object, http.ResponseWriter, *http.Request)
-type MsgHandler func(http.ResponseWriter, *http.Request, []byte, int64) (int32, []byte)
+type MsgHandler func(http.ResponseWriter, *http.Request, []byte, int64) (int32, []byte, int32)
 
 type Object struct {
 	ID int32

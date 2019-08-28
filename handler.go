@@ -6,18 +6,18 @@ import (
 	"log"
 	"net/http"
 
-	VP "yn.com/ext/common/proto"
+	VP "github.yn.com/ext/common/proto"
 
 	"os"
 	"path"
 
-	BASE "yn.com/ext/common/function"
-	LOGGER "yn.com/ext/common/logger"
+	BASE "github.yn.com/ext/common/function"
+	LOGGER "github.yn.com/ext/common/logger"
 
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
-	"yn.com/ext/common/gomsg"
+	"github.yn.com/ext/common/gomsg"
 )
 
 var (
@@ -73,8 +73,8 @@ func (hh *httpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				find = false
 			}
 		}
-		if find == true {
-			LOGGER.Warning("ip(%s) invalid.", ip)
+		if find == false {
+			LOGGER.Warning("ip:%s invalid.", ip)
 			sendResponse(w, 404, []byte(fmt.Sprintf(`{"res": "ip(%s) invalid."}`, ip)))
 			return
 		}
@@ -110,6 +110,7 @@ func onDispatch(obj *Object, w http.ResponseWriter, r *http.Request) {
 	var (
 		en   int32
 		data []byte
+		size int32
 	)
 
 	bytes, err := ioutil.ReadAll(r.Body)
@@ -121,15 +122,17 @@ func onDispatch(obj *Object, w http.ResponseWriter, r *http.Request) {
 
 	handler, exist := obj.msgHandlers[BASE.StrToInt32(ops)]
 	if exist {
-		en, data = handler(w, r, bytes, playerId)
+		en, data, size = handler(w, r, bytes, playerId)
 	} else {
 		en = int32(VP.ErrorCode_NoHandler)
 		data = nil
+		size = 0
 	}
 
 	send := &VP.HttpResult {
 		En: proto.Int32(en),
 		Data: data,
+		Size: size,
 	}
 	res, err := proto.Marshal(send)
 	if err != nil {
