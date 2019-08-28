@@ -132,7 +132,7 @@ func onDispatch(obj *Object, w http.ResponseWriter, r *http.Request) {
 	send := &VP.HttpResult {
 		En: proto.Int32(en),
 		Data: data,
-		Size: size,
+		Size: proto.Int32(size),
 	}
 	res, err := proto.Marshal(send)
 	if err != nil {
