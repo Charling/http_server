@@ -141,6 +141,7 @@ func onDispatch(obj *Object, w http.ResponseWriter, r *http.Request) {
 		send.Data = nil
 		send.Size = proto.Int32(int32(len(data)))
 	}
+	
 	res, err := proto.Marshal(send)
 	if err != nil {
 		e := fmt.Sprintf("Mashal data error %v", err)
