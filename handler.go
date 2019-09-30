@@ -110,7 +110,6 @@ func onDispatch(obj *Object, w http.ResponseWriter, r *http.Request) {
 	var (
 		en   int32
 		data []byte
-		size int32
 	)
 
 	bytes, err := ioutil.ReadAll(r.Body)
@@ -122,17 +121,16 @@ func onDispatch(obj *Object, w http.ResponseWriter, r *http.Request) {
 
 	handler, exist := obj.msgHandlers[BASE.StrToInt32(ops)]
 	if exist {
-		en, data, size = handler(w, r, bytes, playerId)
+		en, data = handler(w, r, bytes, playerId)
 	} else {
 		en = int32(VP.ErrorCode_NoHandler)
 		data = nil
-		size = 0
 	}
 
 	send := &VP.HttpResult {
 		En: proto.Int32(en),
 		Data: data,
-		Size: proto.Int32(size),
+		Size: proto.Int32(int32(len(data))),
 	}
 	res, err := proto.Marshal(send)
 	if err != nil {

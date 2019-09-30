@@ -10,7 +10,7 @@ type httpHandler struct {
 }
 
 type Handler func(*Object, http.ResponseWriter, *http.Request)
-type MsgHandler func(http.ResponseWriter, *http.Request, []byte, int64) (int32, []byte, int32)
+type MsgHandler func(http.ResponseWriter, *http.Request, []byte, int64) (int32, []byte)
 
 type Object struct {
 	ID int32
