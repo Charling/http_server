@@ -11,13 +11,14 @@ import (
 	"os"
 	"path"
 
-	BASE "github.yn.com/ext/common/function"
+	//BASE "github.yn.com/ext/common/function"
 	LOGGER "github.yn.com/ext/common/logger"
 
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
 	"github.yn.com/ext/common/gomsg"
+	//"github.com/golang/protobuf/proto"
 )
 
 var (
@@ -83,7 +84,7 @@ func (hh *httpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		log.Printf(requestPath)
 		requestPath = path.Base(requestPath)
 		handler := obj.handlers[requestPath]
-		LOGGER.Info("requestPath:%s.", requestPath)
+	//	LOGGER.Info("requestPath:%s.", requestPath)
 
 		if handler != nil {
 			handler(obj, w, r)
@@ -97,42 +98,48 @@ func (hh *httpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 func onDispatch(obj *Object, w http.ResponseWriter, r *http.Request) {
 	defer gomsg.Recover()
 	defer r.Body.Close()
-	vals := r.URL.Query()
-	ops, success := BASE.Query(&vals, "ops", w)
-	if !success {
-		return
-	}
-	playerId := int64(0)
-	val := vals.Get("playerid")
-	if val != "" {
-		playerId = BASE.StrToInt64(val)
-	}
+	//vals := r.URL.Query()
+
 	var (
 		en   int32
 		data []byte
-		size int32
 	)
 
 	bytes, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		sendResponse(w, 404, []byte(fmt.Sprintf(`{"res": "ioutil.ReadAll(r.Body) != err."}`)))
-		LOGGER.Error("onDispatch  res ops=%s ioutil.ReadAll(r.Body) error:%v.", ops, err)
+		LOGGER.Error("onDispatch res ioutil.ReadAll(r.Body) error:%v.", err)
 		return
 	}
 
-	handler, exist := obj.msgHandlers[BASE.StrToInt32(ops)]
+	msg := &VP.Message {}
+	err = proto.Unmarshal(bytes, msg)
+	if err != nil {
+		e := " Unmarshal failed..."
+		LOGGER.Error(e)
+		sendResponse(w, 404, []byte(fmt.Sprintf(`{"res": " Unmarshal failed..."}`)))
+		return 
+	}	
+
+	handler, exist := obj.msgHandlers[*msg.Ops]
 	if exist {
-		en, data, size = handler(w, r, bytes, playerId)
+		log.Println("required ops =", *msg.Ops, " playerid=", *msg.PlayerId)
+		en, data = handler(w, r, msg.Data, *msg.PlayerId)
 	} else {
 		en = int32(VP.ErrorCode_NoHandler)
+		log.Println("ops not register ops=", *msg.Ops)
 		data = nil
-		size = 0
 	}
 
-	send := &VP.HttpResult {
-		En: proto.Int32(en),
-		Data: data,
-		Size: proto.Int32(size),
+	send := &VP.HttpResult {}
+	if en == int32(VP.ErrorCode_Success) {
+		send.En = proto.Int32(en)
+		send.Data = data
+		send.Size = proto.Int32(int32(len(data)))
+	} else {
+		send.En = proto.Int32(en)
+		send.Data = nil
+		send.Size = proto.Int32(int32(len(data)))
 	}
 	res, err := proto.Marshal(send)
 	if err != nil {
