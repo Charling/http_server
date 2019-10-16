@@ -19,6 +19,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.yn.com/ext/common/gomsg"
 	//"github.com/golang/protobuf/proto"
+	"strings"
 )
 
 var (
@@ -66,16 +67,17 @@ func (hh *httpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", "*") 
 
 	ip := GetIP(r)
+//	LOGGER.Info("ip:%s", ip)
 	if obj,ok := mapObjects[hh.ID]; ok {
 		arrlen := len(obj.ips)
-		find := true
+		find := false
 		for i:=0; i < arrlen; i++ {
-			if obj.ips[i] == ip {
-				find = false
+			if strings.Compare(obj.ips[i],ip) == 0 {
+				find = true
 			}
 		}
 		if find == false {
-			LOGGER.Warning("ip:%s invalid.", ip)
+			LOGGER.Error("ip:%s invalid.", ip)
 			sendResponse(w, 404, []byte(fmt.Sprintf(`{"res": "ip(%s) invalid."}`, ip)))
 			return
 		}
