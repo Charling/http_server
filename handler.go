@@ -17,9 +17,10 @@ import (
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
-	"github.yn.com/ext/common/gomsg"
+	//"github.yn.com/ext/common/LOGGER"
 	//"github.com/golang/protobuf/proto"
 	"strings"
+	token "github.yn.com/ext/common/token"
 )
 
 var (
@@ -27,6 +28,7 @@ var (
 
 	Logger *log.Logger
 	_file  *os.File
+
 )
 
 func (obj *Object) Startups(httpUrl string, msgHand *map[string]Handler, msgHead *map[int32]MsgHandler) {
@@ -41,7 +43,7 @@ func (obj *Object) Startups(httpUrl string, msgHand *map[string]Handler, msgHead
 
 // acceptHTTPRequest 监听和接受HTTP
 func acceptHTTPRequest(obj *Object, httpUrl string) {
-	defer gomsg.Recover()
+	defer LOGGER.Recover()
 	s := &http.Server{
 		Addr:    httpUrl,
 		Handler: &httpHandler{
@@ -61,7 +63,7 @@ func acceptHTTPRequest(obj *Object, httpUrl string) {
 
 // ServeHTTP HTTP 请求处理
 func (hh *httpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	defer gomsg.Recover()
+	defer LOGGER.Recover()
 
 	//允许http跨域访问
 	w.Header().Set("Access-Control-Allow-Origin", "*") 
@@ -70,16 +72,18 @@ func (hh *httpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 //	LOGGER.Info("ip:%s", ip)
 	if obj,ok := mapObjects[hh.ID]; ok {
 		arrlen := len(obj.ips)
-		find := false
-		for i:=0; i < arrlen; i++ {
-			if strings.Compare(obj.ips[i],ip) == 0 {
-				find = true
+		if arrlen > 0 {
+			find := false
+			for i:=0; i < arrlen; i++ {
+				if strings.Compare(obj.ips[i],ip) == 0 {
+					find = true
+				}
 			}
-		}
-		if find == false {
-			LOGGER.Error("ip:%s invalid.", ip)
-			sendResponse(w, 404, []byte(fmt.Sprintf(`{"res": "ip(%s) invalid."}`, ip)))
-			return
+			if find == false {
+			//	LOGGER.Error("ip:%s invalid.", ip)
+				sendResponse(w, 404, []byte(fmt.Sprintf(`{"res": "ip(%s) invalid."}`, ip)))
+				return
+			}
 		}
 			
 		var requestPath = r.URL.Path
@@ -98,7 +102,7 @@ func (hh *httpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func onDispatch(obj *Object, w http.ResponseWriter, r *http.Request) {
-	defer gomsg.Recover()
+	defer LOGGER.Recover()
 	defer r.Body.Close()
 	//vals := r.URL.Query()
 
@@ -126,7 +130,30 @@ func onDispatch(obj *Object, w http.ResponseWriter, r *http.Request) {
 	handler, exist := obj.msgHandlers[*msg.Ops]
 	if exist {
 		log.Println("required ops =", *msg.Ops, " playerid=", *msg.PlayerId)
-		en, data = handler(w, r, msg.Data, *msg.PlayerId)
+		filters := true
+		if obj.mapFilters != nil {
+			_, filters = obj.mapFilters[*msg.Ops]
+		}
+		if filters {
+			en, data = handler(w, r, msg.Data, *msg.PlayerId)
+		} else {
+			//需要校验token
+			strToken := *msg.Token
+			if strToken == "" {
+				en = int32(VP.ErrorCode_NoHandler)
+				LOGGER.Error("ops not register ops= %d token is nil", *msg.Ops)
+				data = nil
+			} else {
+				if token.VerifyToken(*msg.PlayerId, strToken) == true {
+					en, data = handler(w, r, msg.Data, *msg.PlayerId)
+				} else {
+					en = int32(VP.ErrorCode_NoHandler)
+					LOGGER.Error("ops not register ops= %d token is wrong", *msg.Ops)
+					data = nil
+				}
+			}
+		}
+
 	} else {
 		en = int32(VP.ErrorCode_NoHandler)
 		log.Println("ops not register ops=", *msg.Ops)

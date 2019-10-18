@@ -16,6 +16,7 @@ type Object struct {
 	ID int32
 	handlers map[string]Handler
 	msgHandlers map[int32]MsgHandler
+	mapFilters map[int32]bool
 	ips []string
 }
 
@@ -51,4 +52,8 @@ func CreateHttpObject(id int32) *Object {
 func (obj *Object) SetIps(ips []string) {
 	obj.ips = nil
 	obj.ips = ips
+}
+
+func (obj *Object) UpdateFilters(filters *map[int32]bool) {
+	obj.mapFilters = *filters
 }
