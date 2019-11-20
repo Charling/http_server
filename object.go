@@ -2,7 +2,8 @@ package http_server
 
 import (
 	"net/http"
-	BASE "github.yn.com/ext/common/function"
+//	BASE "github.yn.com/ext/common/function"
+//	logger "github.yn.com/ext/common/logger"
 )
 
 type httpHandler struct {
@@ -23,12 +24,12 @@ type Object struct {
 //go 通过nginx代理后获取用户ip
 func GetIP(r *http.Request)  string{
 	//nginx代理的ip
-    ip := r.Header.Get("X-Real-IP")
+	ip := r.Header.Get("X-Real-IP")
+//	logger.Info("real ip:%s.", ip)
 	if ip == "" {
        ip = r.RemoteAddr
 	}
-	pos := BASE.UnicodeIndex(ip, ":")
-	return string([]rune(ip)[:pos])
+	return ip
 }
 
 func CreateHttpObject(id int32) *Object {

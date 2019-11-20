@@ -90,7 +90,7 @@ func (hh *httpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		log.Printf(requestPath)
 		requestPath = path.Base(requestPath)
 		handler := obj.handlers[requestPath]
-	//	LOGGER.Info("requestPath:%s.", requestPath)
+		LOGGER.Info("requestPath:%s.", requestPath)
 
 		if handler != nil {
 			handler(obj, w, r)
