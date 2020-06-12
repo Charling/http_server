@@ -2,8 +2,19 @@ package http_server
 
 import (
 	"net/http"
-//	BASE "github.yn.com/ext/common/function"
+	BASE "github.yn.com/ext/common/function"
 //	logger "github.yn.com/ext/common/logger"
+	"strings"
+)
+
+const (
+	Server = 0
+	Client = 1
+)
+
+const (
+	Bytes = 0
+	Json = 1
 )
 
 type httpHandler struct {
@@ -12,11 +23,14 @@ type httpHandler struct {
 
 type Handler func(*Object, http.ResponseWriter, *http.Request)
 type MsgHandler func(http.ResponseWriter, *http.Request, []byte, int64) (int32, []byte)
+type MsgJsonHandler func(http.ResponseWriter, *http.Request, string, int64) (int32, string)
 
 type Object struct {
 	ID int32
+	ResponseType int32
 	handlers map[string]Handler
 	msgHandlers map[int32]MsgHandler
+	msgJsonHandlers map[int32]MsgJsonHandler
 	mapFilters map[int32]bool
 	ips []string
 }
@@ -29,10 +43,15 @@ func GetIP(r *http.Request)  string{
 	if ip == "" {
        ip = r.RemoteAddr
 	}
+
+	if strings.ContainsAny(ip, ":") == true {
+		pos := BASE.UnicodeIndex(ip, ":")
+		return string([]rune(ip)[:pos])
+	}
 	return ip
 }
 
-func CreateHttpObject(id int32) *Object {
+func CreateHttpObject(id int32, rtype int32) *Object {
 	if mapObjects == nil {
 		mapObjects = make(map[int32]*Object)
 	}
@@ -42,6 +61,7 @@ func CreateHttpObject(id int32) *Object {
 	var str []string
 	obj := &Object {
 		ID: id,
+		ResponseType: rtype,
 		handlers: make(map[string]Handler),
 		msgHandlers: make(map[int32]MsgHandler),
 		ips: str,
